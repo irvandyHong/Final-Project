@@ -1,13 +1,15 @@
 package entity
 
+import "time"
+
 type Person struct {
-	Id        string
-	Age       int
+	Id        int
+	Age       string
 	Email     string
 	Password  string
 	Username  string
-	CreatedAt string
-	UpdatedAt string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 type Photo struct {
 	Title    string
