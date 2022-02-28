@@ -6,7 +6,6 @@ import (
 	"final-project/entity"
 	"fmt"
 	"net/http"
-	"time"
 
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -40,6 +39,10 @@ func ConnectDB() {
 	//defer db.Close()
 }
 
+func GetDB() *sql.DB {
+	return DB
+}
+
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var result = []entity.Person{}
@@ -64,43 +67,25 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid Method", http.StatusBadRequest)
 }
 
-func GetUserId(w http.ResponseWriter, r *http.Request) (count int) {
-	i := 1
-	w.Header().Set("Content-Type", "application/json")
-	SqlStatement := "select * from user"
-	rows, err := DB.Query(SqlStatement)
+// func checkCount(rows *sql.Rows) (count int) {
+// 	for rows.Next() {
+// 		err := rows.Scan(&count)
+// 		checkErr(err)
+// 	}
+// 	return count
+// }
 
-	for rows.Next() {
-		if err != nil {
-			err := rows.Scan(&count)
-			checkErr(err)
-		}
-	}
-	fmt.Println(i)
-	return count
-}
-func checkCount(rows *sql.Rows) (count int) {
-	for rows.Next() {
-		err := rows.Scan(&count)
-		checkErr(err)
-	}
-	return count
-}
-
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 func Login(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		fmt.Println("hehe")
-		http.ServeFile(w, r, "view/login.html")
+		http.ServeFile(w, r, "view/register.html")
 		return
 	}
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+	age := r.FormValue("age")
+	fmt.Println(age)
 	temppassword := "aa"
 	fmt.Println(username, password)
 	//deskripsi dan compare password
@@ -110,48 +95,41 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func UsernameQuery(w http.ResponseWriter, r *http.Request, username string) {
 	sqlStatement := "Select * from users where username = $1"
 	err := DB.QueryRow(sqlStatement, username).Scan(&username)
-	checkErr(err)
-
-}
-func Register(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var person = entity.Person{}
-	if r.Method != "POST" {
-		fmt.Println("hehe")
-		http.ServeFile(w, r, "view/register.html")
-		return
-	} else if r.Method == "POST" {
-
-		username := r.FormValue("username")
-		password := r.FormValue("password")
-		EncryptPassword := EncryptPassword(password)
-		email := r.FormValue("email")
-		age := r.FormValue("age")
-		id := GetUserId(w, r)
-		createdAt := time.Now()
-		updatedAt := time.Now()
-		person = entity.Person{
-			Id:        id,
-			Username:  username,
-			Password:  EncryptPassword,
-			Email:     email,
-			Age:       age,
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
-		}
-	}
-	sqlStatement := "insert Into users(username,password,email,age,id,created_at,updated_at) Values($1,$2,$3,$4,$5,$6,$7) returning*"
-	err := DB.QueryRow(sqlStatement, person.Username, person.Password, person.Email, person.Age, person.Id, person.CreatedAt, person.UpdatedAt).
-		Scan(&person.Username, &person.Password, &person.Email, &person.Age, &person.Id, &person.CreatedAt, &person.UpdatedAt)
+	//handler.CheckErr(err)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func EncryptPassword(password string) string {
-	bytes, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes)
-}
+// func login2(w http.ResponseWriter, r *http.Request) {
+// 	session := sessions.Start(w, r)
+// 	if len(session.GetString("username")) != 0 && checkErr(w, r, err) {
+// 		http.Redirect(w, r, "/", 302)
+// 	}
+// 	if r.Method != "POST" {
+// 		http.ServeFile(w, r, "views/login.html")
+// 		return
+// 	}
+// 	username := r.FormValue("username")
+// 	password := r.FormValue("password")
+
+// 	users := QueryUser(username)
+
+// 	//deskripsi dan compare password
+// 	var password_tes = bcrypt.CompareHashAndPassword([]byte(users.Password), []byte(password))
+
+// 	if password_tes == nil {
+// 		//login success
+// 		session := sessions.Start(w, r)
+// 		session.Set("username", users.Username)
+// 		session.Set("name", users.FirstName)
+// 		http.Redirect(w, r, "/", 302)
+// 	} else {
+// 		//login failed
+// 		http.Redirect(w, r, "/login", 302)
+// 	}
+
+// }
 
 // func outputHTML(w http.ResponseWriter, filename string, data interface{}) {
 // 	t, err := template.ParseFiles(filename)
