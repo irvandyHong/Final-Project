@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Upload Photo</title>
+
+      <!-- Compiled and minified CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+  
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+
+</head>
+  <body>
+    <nav>
+      <div class="nav-wrapper">
+        <a href="#" class="brand-logo">Go</a>
+        <ul id="nav-mobile" class="right hide-on-med-and-down">
+          <li><a href="badges.html">Home</a></li>
+          <li><a href="collapsible.html">Login</a></li>
+        </ul>
+      </div>
+    </nav>
+    <div class="container">
+      <div class="row">
+        <form method="POST" 
+        class="col s12" 
+        enctype="multipart/form-data"
+        action="http://localhost:8080/upload">
+          <div class="row">
+            <div class="input-field col s12">
+              <input name="title" id="title" type="text" class="validate">
+              <label for="title">title</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="input-field col s12">
+              <input name="caption" id="caption" type="text" class="validate">
+              <label for="caption">Caption</label>
+            </div>
+          </div>
+      <input type="file" name="myFile" />
+      <input type="submit" value="upload" />
+    </form>
+    </div>
+    
+  </body>
+</html>

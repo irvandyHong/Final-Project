@@ -1,88 +1,207 @@
 package handler
 
 import (
-	"final-project/entity"
+	"final-project/common"
 	"final-project/repo"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"text/template"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
-var DB = repo.GetDB()
+var i, j int
+var t *template.Template
+var ta *template.Template
+var err error
 
-func RegisterHandler() {
+func Welcome(w http.ResponseWriter, r *http.Request) {
+	//i := 0
+	var t *template.Template
+	//var err error
+	common.AuthenticateJWT(w, r)
+	if common.AuthenticateJWT(w, r) == false {
+		fmt.Println("error")
+	} else {
+		tmp(w, r)
+	}
 
+	if r.Method == http.MethodPost {
+
+		url := repo.GetPhotoData(w, r, i)
+		i++
+		ta, err := template.ParseFiles("view/home.html")
+		myvar := map[string]interface{}{"url1": url.PhotoUrl, "title": url.Title, "caption": url.Caption}
+		ta.Execute(w, myvar)
+		t.Execute(os.Stdout, myvar)
+		common.CheckErr(err)
+	}
+	// Finally, return the welcome message to the user, along with their
+	// username given in the token
 }
-func Register(w http.ResponseWriter, r *http.Request) {
-	//w.Header().Set("Content-Type", "application/json")
-	var person = entity.Person{}
-	if r.Method != "POST" {
-		fmt.Println("hehe")
-		http.ServeFile(w, r, "view/register.html")
-		return
-	} else if r.Method == "POST" {
-		username := r.FormValue("username")
-		password := r.FormValue("password")
-		EncryptPassword := EncryptPassword(password)
-		email := r.FormValue("email")
-		age := r.FormValue("age")
-		id := GetUserId(w, r)
-		createdAt := time.Now()
-		updatedAt := time.Now()
-		person = entity.Person{
-			Id:        id,
-			Username:  username,
-			Password:  EncryptPassword,
-			Email:     email,
-			Age:       age,
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
+func tmp(w http.ResponseWriter, r *http.Request) {
+	url := repo.GetPhotoData(w, r, i)
+	t, err = template.ParseFiles("view/home.html")
+	myvar := map[string]interface{}{"url1": url.PhotoUrl, "title": url.Title, "caption": url.Caption}
+	t.Execute(w, myvar)
+	common.CheckErr(err)
+}
+func UploadFile(w http.ResponseWriter, r *http.Request) {
+	if common.AuthenticateJWT(w, r) {
+		if r.Method != "POST" {
+			http.ServeFile(w, r, "view/upload.html")
+			fmt.Fprint(w, " <img src=\"/temp-images/upload-092252896.png\" alt=\"t\">")
+			return
 		}
-	}
-	sqlStatement := "insert Into users(username,password,email,age,id,created_at,updated_at) Values($1,$2,$3,$4,$5,$6,$7) returning*"
-	err := DB.QueryRow(sqlStatement, person.Username, person.Password, person.Email, person.Age, person.Id, person.CreatedAt, person.UpdatedAt).
-		Scan(&person.Username, &person.Password, &person.Email, &person.Age, &person.Id, &person.CreatedAt, &person.UpdatedAt)
-	CheckErr(err)
-}
-func Login2(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("File Upload Endpoint Hit")
 
-	if r.Method != "POST" {
-		fmt.Println("hehe")
-		http.ServeFile(w, r, "view/register.html")
-		return
-	}
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	temppassword := "aa"
-	fmt.Println(username, password)
-	//deskripsi dan compare password
-	var password_tes = bcrypt.CompareHashAndPassword([]byte(temppassword), []byte(password))
-	fmt.Println(password_tes)
-}
-func GetUserId(w http.ResponseWriter, r *http.Request) (count int) {
-	i := 1
-	w.Header().Set("Content-Type", "application/json")
-	SqlStatement := "select * from user"
-	rows, err := DB.Query(SqlStatement)
-
-	for rows.Next() {
+		// Parse our multipart form, 10 << 20 specifies a maximum
+		// upload of 10 MB files.
+		r.ParseMultipartForm(10 << 20)
+		// FormFile returns the first file for the given key `myFile`
+		// it also returns the FileHeader so we can get the Filename,
+		// the Header and the size of the file
+		file, handler, err := r.FormFile("myFile")
 		if err != nil {
-			err := rows.Scan(&count)
-			CheckErr(err)
+			fmt.Println("Error Retrieving the File")
+			fmt.Println(err)
+			return
 		}
+		defer file.Close()
+		fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+		fmt.Printf("File Size: %+v\n", handler.Size)
+		fmt.Printf("MIME Header: %+v\n", handler.Header)
+
+		// Create a temporary file within our temp-images directory that follows
+		// a particular naming pattern
+		tempFile, err := ioutil.TempFile("temp-images", "upload-*.png")
+		if err != nil {
+			fmt.Println(err)
+		}
+		title := r.FormValue("title")
+		caption := r.FormValue("caption")
+		repo.PhotoQuery(w, r, tempFile.Name(), title, caption)
+		defer tempFile.Close()
+
+		// read all of the contents of our uploaded file into a
+		// byte array
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+		}
+		// write this byte array to our temporary file
+		tempFile.Write(fileBytes)
+		// return that we have successfully uploaded our file!
+		fmt.Fprintf(w, "Successfully Uploaded File\n")
+	} else {
 	}
-	fmt.Println(i)
-	return count
+
+}
+func Profile(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	common.AuthenticateJWT(w, r)
+	//var t template.Template
+	if common.AuthenticateJWT(w, r) == false {
+		fmt.Println("error")
+	} else {
+		tmp(w, r)
+	}
+	url := repo.GetUserData(w, r)
+	ta, err = template.ParseFiles("view/profile.html")
+	myvar := map[string]interface{}{"id": url.Id, "username": url.Username, "email": url.Email, "age": url.Age, "updated_at": url.UpdatedAt}
+	ta.Execute(w, myvar)
+	common.CheckErr(err)
+	//}
+	if r.Method == http.MethodPost {
+		username := r.FormValue("username")
+		email := r.FormValue("email")
+		fmt.Println("called", username, email)
+		repo.EditUserData(w, r, username, email)
+	}
+	// if r.Method == http.MethodPut {
+	// 	//common.AuthenticateJWT(w, r)
+	// 	username := r.FormValue("username")
+	// 	email := r.FormValue("email")
+	// 	repo.EditUserData(w, r, username, email)
+	// }
+	// if r.Method == http.MethodGet {
+	// 	repo.DeleteUserData(w, r)
+	// }
+	// Finally, return the welcome message to the user, along with their
+	// username given in the token
+}
+func MyPhoto(w http.ResponseWriter, r *http.Request) {
+	var t *template.Template
+	common.AuthenticateJWT(w, r)
+	claims := common.GetJWTData(w, r)
+	if common.AuthenticateJWT(w, r) == false {
+		fmt.Println("error")
+	} else {
+		url := repo.GetUserPhoto(w, r, claims.Id, j)
+		t, err = template.ParseFiles("view/myphoto.html")
+		myvar := map[string]interface{}{"url1": url.PhotoUrl, "title": url.Title, "caption": url.Caption}
+		t.Execute(w, myvar)
+		common.CheckErr(err)
+	}
+	if r.Method == http.MethodGet {
+		url := repo.GetUserPhoto(w, r, claims.Id, j)
+		j++
+		ta, err := template.ParseFiles("view/myphoto.html")
+		myvar := map[string]interface{}{"url1": url.PhotoUrl, "title": url.Title, "caption": url.Caption}
+		ta.Execute(w, myvar)
+		t.Execute(os.Stdout, myvar)
+		common.CheckErr(err)
+	} else if r.Method == http.MethodPost {
+		url := repo.GetUserPhoto(w, r, claims.Id, j)
+		repo.DeletePhoto(w, r, url.PhotoUrl)
+		fmt.Println("success")
+	}
+}
+func EditPhoto(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var t *template.Template
+	common.AuthenticateJWT(w, r)
+	claims := common.GetJWTData(w, r)
+	if common.AuthenticateJWT(w, r) == false {
+		fmt.Println("error")
+	} else {
+		url := repo.GetUserPhoto(w, r, claims.Id, j)
+		t, err = template.ParseFiles("view/editphoto.html")
+		myvar := map[string]interface{}{"url1": url.PhotoUrl, "title": url.Title, "caption": url.Caption}
+		t.Execute(w, myvar)
+		common.CheckErr(err)
+	}
+	if r.Method == http.MethodGet {
+		url := repo.GetUserPhoto(w, r, claims.Id, j)
+		j++
+		ta, err := template.ParseFiles("view/editphoto.html")
+		myvar := map[string]interface{}{"url1": url.PhotoUrl, "title": url.Title, "caption": url.Caption}
+		ta.Execute(w, myvar)
+		t.Execute(os.Stdout, myvar)
+		common.CheckErr(err)
+	} else if r.Method == http.MethodPost {
+		title := r.FormValue("title")
+		caption := r.FormValue("caption")
+		fmt.Println("title :", title, caption)
+		url := repo.GetUserPhoto(w, r, claims.Id, j)
+		repo.EditPhoto(w, r, title, caption, url.PhotoUrl)
+	}
 }
 
-func CheckErr(err error) {
-	if err != nil {
-		panic(err)
+func CommentHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	http.ServeFile(w, r, "view/comment.html")
+
+	claims := common.GetJWTData(w, r)
+	id := repo.GetCommentId(w, r)
+	message := r.FormValue("comment")
+	photo_id := i
+	user_id := claims.Id
+	created_at := time.Now()
+	fmt.Println(message)
+	if r.Method == http.MethodPost {
+		repo.PostComment(w, r, id, photo_id, user_id, created_at, message)
 	}
-}
-func EncryptPassword(password string) string {
-	bytes, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes)
+
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Welcome</title>
+    <title>My Photo</title>
 
       <!-- Compiled and minified CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
@@ -21,9 +21,8 @@
                   <ul id="nav-mobile" class="right hide-on-med-and-down">
                     <li><a href="/">Home</a></li>
                     <li><a href="/upload">Upload</a></li>
-                    <li><a href="/users">Profile</a></li>
-                    <li><a href="/users/delete">Delete Account</a></li>
-                    <li><a href="/users/photo">photo</a></li>
+                    <li><a href="/test">Profile</a></li>
+                    <li><a href="/logout">Logout</a></li>
                   </ul>
                 </div>
               </nav>
@@ -31,15 +30,19 @@
       <div>
         <h1>{{.title}}</h1>
         <h2>{{.caption}}</h2>
-        <a href="PhotoView.html"> <img src="{{.url1}}" alt="t"></a>
+        <img src="{{.url1}}" alt="t">
+        <h2>Comment</h2>
+        <h5>{{.username}}</h5>
+        <h5>{{.comment}}</h5>
       </div>
       <div>
         <div class="row">
-          <form method="post">
+          <form method="get">
             <button type="submit" class="waves-effect waves-light btn"><i class="material-icons right"></i>Next</button>
           </form>
-          <button type="submit" class="waves-effect waves-light btn"><i class="material-icons left"></i>Previous</button>
-         
+          <form method="post">
+          <button type="submit" class="waves-effect waves-light btn"><i class="material-icons left"></i>Delete</button>
+        </form>
   </div> 
       </div>
     </div>
